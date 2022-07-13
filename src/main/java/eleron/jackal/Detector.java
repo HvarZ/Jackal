@@ -7,6 +7,9 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Optional;
 
 public class Detector implements IDetectable {
     static {
@@ -40,6 +43,17 @@ public class Detector implements IDetectable {
             );
         }
         Imgcodecs.imwrite(pathWrite, imageRead);
+    }
+
+    @Override
+    public void faceDetectAndCut(String pathRead, String pathWrite) throws DetectException {
+        if (!(new File(pathRead).exists())) {
+            throw new DetectException("File (" + pathRead + ") not found");
+        }
+        Mat imageRead = Imgcodecs.imread(pathRead);
+        MatOfRect faceDetections = detect(imageRead);
+        Optional<Rect> optionalRect = Arrays.stream(faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width));
+        Imgcodecs.imwrite(pathWrite, new Mat(imageRead, optionalRect.orElseThrow(() -> new DetectException("Not detected"))));
     }
 
     private MatOfRect detect(Mat imageRead) {
