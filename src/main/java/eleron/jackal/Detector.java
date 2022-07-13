@@ -27,11 +27,8 @@ public class Detector implements IDetectable {
         if (!(new File(pathRead).exists())) {
             throw new DetectException("File (" + pathRead + ") not found");
         }
-
         Mat imageRead = Imgcodecs.imread(pathRead);
-        MatOfRect faceDetections = new MatOfRect();
-
-        classifier.detectMultiScale(imageRead, faceDetections);
+        MatOfRect faceDetections = detect(imageRead);
 
         for (Rect rect : faceDetections.toArray()) {
             Imgproc.rectangle(
@@ -43,5 +40,11 @@ public class Detector implements IDetectable {
             );
         }
         Imgcodecs.imwrite(pathWrite, imageRead);
+    }
+
+    private MatOfRect detect(Mat imageRead) {
+        MatOfRect faceDetections = new MatOfRect();
+        classifier.detectMultiScale(imageRead, faceDetections);
+        return faceDetections;
     }
 }
