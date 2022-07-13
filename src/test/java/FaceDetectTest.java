@@ -9,20 +9,20 @@ public class FaceDetectTest {
             IDetectable detector = new Detector(JackalTypes.FRONTAL_FACE);
             detector.faceDetect(
             "src/test/resources/TestFaceDetectImage.png",
-            "src/test/resources/TestFaceDetectResultImage.png");
+            "src/test/resources/detectResults/TestFaceDetectResultImage.png");
             detector.faceDetect(
             "src/test/resources/TestFaceDetectImageOnePerson.png",
-            "src/test/resources/TestFaceDetectResultOnePerson.png"
+            "src/test/resources/detectResults/TestFaceDetectResultOnePerson.png"
             );
 
             IDetectable detector_2 = new Detector(JackalTypes.FRONTAL_FACE_2);
             detector_2.faceDetect(
             "src/test/resources/TestFaceDetectImage.png",
-            "src/test/resources/TestFaceDetectResultImage_2.png");
+            "src/test/resources/detectResults/TestFaceDetectResultImage_2.png");
 
             detector_2.faceDetect(
             "src/test/resources/TestFaceDetectImageOnePerson.png",
-            "src/test/resources/TestFaceDetectResultOnePerson_2.png"
+            "src/test/resources/detectResults/TestFaceDetectResultOnePerson_2.png"
             );
 
 
