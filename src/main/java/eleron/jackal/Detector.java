@@ -6,7 +6,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
-import java.io.File;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Optional;
@@ -43,6 +43,7 @@ public class Detector implements IDetectable {
             );
         }
         Imgcodecs.imwrite(pathWrite, imageRead);
+        imageRead.release();
     }
 
     @Override
@@ -60,6 +61,7 @@ public class Detector implements IDetectable {
         Imgcodecs.imwrite(pathWrite, new Mat(
                 imageRead, optionalRect.orElseThrow(() -> new DetectException("Not detected"))
         ));
+        imageRead.release();
     }
 
     public void edgeDetect(String pathRead, String pathWrite, int[] kernelSettings) throws DetectException {
@@ -69,6 +71,8 @@ public class Detector implements IDetectable {
         Imgproc.blur(greySrc, detectedEdges, new Size(3, 3));
         Imgproc.Canny(detectedEdges, detectedEdges, kernelSettings[0], kernelSettings[1], kernelSettings[2]);
         Imgcodecs.imwrite(pathWrite, detectedEdges);
+        greySrc.release();
+        detectedEdges.release();
     }
 
     private void checkValidity(String path, int[] kernel, boolean isNeededKernel, int cascadeVariant) throws DetectException {
@@ -90,6 +94,7 @@ public class Detector implements IDetectable {
         Mat greyImage = new Mat(imageRead.size(), imageRead.type());
         Imgproc.cvtColor(imageRead, greyImage, Imgproc.COLOR_BGR2GRAY);
         Imgcodecs.imwrite(pathWrite, greyImage);
+        imageRead.release();
 
         return greyImage;
     }
@@ -99,5 +104,97 @@ public class Detector implements IDetectable {
         MatOfRect faceDetections = new MatOfRect();
         classifier.detectMultiScale(imageRead, faceDetections);
         return faceDetections;
+    }
+
+    public static boolean saveImageBinary(Mat image, String path) {
+        if (image == null || image.empty()) {
+            return false;
+        }
+        if (path == null || path.length() < 5 || !path.endsWith(".mat"))
+            return false;
+        if (image.depth() == CvType.CV_8U) {
+        } else if (image.depth() == CvType.CV_16U) {
+            Mat m_16 = new Mat();
+            image.convertTo(m_16, CvType.CV_8U, 255.0 / 65535);
+            image = m_16;
+        } else if (image.depth() == CvType.CV_32F) {
+            Mat m_32 = new Mat();
+            image.convertTo(m_32, CvType.CV_8U, 255);
+            image = m_32;
+        } else {
+            return false;
+        }
+
+        if (image.channels() == 2 || image.channels() > 4) {
+            return false;
+        }
+
+        byte[] buffer = new byte[image.channels() * image.cols() * image.rows()];
+        image.get(0, 0, buffer);
+
+        try (OutputStream out = new FileOutputStream(path);
+             BufferedOutputStream bout = new BufferedOutputStream(out);
+             DataOutputStream dout = new DataOutputStream(bout);)
+        {
+            dout.writeInt(image.rows());
+            dout.writeInt(image.cols());
+            dout.writeInt(image.channels());
+            dout.write(buffer);
+            dout.flush();
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
+    }
+
+    private static Mat loadMatBinary(String path) {
+        if (path == null || path.length() < 5 || !path.endsWith(".mat")) {
+            return new Mat();
+        }
+
+        File file = new File(path);
+        if (!file.exists() || !file.isFile()) {
+            return new Mat();
+        }
+
+        try (
+            InputStream in = new FileInputStream(path);
+            BufferedInputStream bin = new BufferedInputStream(in);
+            DataInputStream din = new DataInputStream(bin);
+        )
+        {
+            int rows = din.readInt();
+            if (rows < 1) {
+                return new Mat();
+            }
+            int cols = din.readInt();
+            if (cols < 1) {
+                return new Mat();
+            }
+            int ch = din.readInt();
+            int type;
+            if (ch == 1) {
+                type = CvType.CV_8UC1;
+            } else if (ch == 3) {
+                type = CvType.CV_8UC1;
+            } else if (ch == 4) {
+                type = CvType.CV_8UC4;
+            } else {
+                return new Mat();
+            }
+
+            int size = ch * cols * rows;
+            byte[] buf = new byte[size];
+            int resize = din.read(buf);
+            if (size != resize) {
+                return new Mat();
+            }
+
+            Mat image = new Mat(rows, cols, type);
+            image.put(0, 0, buf);
+            return image;
+        } catch (IOException e) {
+            return new Mat();
+        }
     }
 }
