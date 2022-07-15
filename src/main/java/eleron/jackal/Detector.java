@@ -68,27 +68,49 @@ public class Detector implements IDetectable {
         Mat greySrc = getGrayMat(pathRead, pathWrite);
         Mat detectedEdges = new Mat();
 
-        Imgproc.blur(greySrc, detectedEdges, new Size(3, 3));
-        Imgproc.Canny(detectedEdges, detectedEdges,
-                kernelSettings[0], kernelSettings[1], kernelSettings[2], false);
+        Imgproc.blur(greySrc,
+                     detectedEdges,
+                     new Size(3, 3));
+
+        Imgproc.Canny(detectedEdges,
+                      detectedEdges,
+                      kernelSettings[0], kernelSettings[1], kernelSettings[2],
+            false);
 
         Mat edgesCopy = detectedEdges.clone();
         Mat hierarchy = new Mat();
+        Mat mask = new Mat();
 
         List<MatOfPoint> counters = new ArrayList<>();
-        Imgproc.findContours(edgesCopy, counters, hierarchy,Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        Imgproc.findContours(edgesCopy,
+                             counters,
+                             hierarchy,
+                             Imgproc.RETR_LIST,
+                             Imgproc.CHAIN_APPROX_SIMPLE);
 
-        Optional<MatOfPoint> biggestCounter = counters.stream().max(
-                Comparator.comparingDouble(x -> Imgproc.arcLength(new MatOfPoint2f(x.toArray()), true)
-        ));
+        MatOfPoint biggestCounter = counters.stream().max(
+                Comparator.comparingDouble(
+                    x -> Imgproc.arcLength(new MatOfPoint2f(x.toArray()), false)
+        )).orElseThrow(() -> new DetectException("Not detected"));
 
-        List<MatOfPoint> biggestCounters = new ArrayList<>();
-        biggestCounters.add(biggestCounter.orElseThrow(
-                () -> new DetectException("Not detected")
-        ));
+        Imgproc.grabCut(image,
+                        mask,
+                        Imgproc.boundingRect(biggestCounter),
+                        new Mat(),
+                        new Mat(),
+                        1,
+                        Imgproc.GC_INIT_WITH_RECT);
 
-        Imgproc.drawContours(image, biggestCounters, -1, new Scalar(0, 255, 0));
-        Imgcodecs.imwrite(pathWrite, image);
+        Mat maskPR_FGD = new Mat();
+
+        Core.compare(mask, new Scalar(Imgproc.GC_PR_FGD), maskPR_FGD,
+                Core.CMP_EQ);
+
+        Mat resultPR_FGD = new Mat(image.rows(), image.cols(), CvType.CV_8UC3,
+                new Scalar(0, 0, 0));
+
+        image.copyTo(resultPR_FGD, maskPR_FGD);
+        Imgcodecs.imwrite(pathWrite, resultPR_FGD);
 
         image.release();
         greySrc.release();
