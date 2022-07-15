@@ -7,9 +7,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Optional;
+import java.util.*;
 
 public class Detector implements IDetectable {
     static {
@@ -66,13 +64,37 @@ public class Detector implements IDetectable {
 
     public void edgeDetect(String pathRead, String pathWrite, int[] kernelSettings) throws DetectException {
         checkValidity(pathRead, kernelSettings, true, JackalTypes.DEFAULT);
+        Mat image = Imgcodecs.imread(pathRead);
         Mat greySrc = getGrayMat(pathRead, pathWrite);
         Mat detectedEdges = new Mat();
+
         Imgproc.blur(greySrc, detectedEdges, new Size(3, 3));
-        Imgproc.Canny(detectedEdges, detectedEdges, kernelSettings[0], kernelSettings[1], kernelSettings[2]);
-        Imgcodecs.imwrite(pathWrite, detectedEdges);
+        Imgproc.Canny(detectedEdges, detectedEdges,
+                kernelSettings[0], kernelSettings[1], kernelSettings[2], false);
+
+        Mat edgesCopy = detectedEdges.clone();
+        Mat hierarchy = new Mat();
+
+        List<MatOfPoint> counters = new ArrayList<>();
+        Imgproc.findContours(edgesCopy, counters, hierarchy,Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        Optional<MatOfPoint> biggestCounter = counters.stream().max(
+                Comparator.comparingDouble(x -> Imgproc.arcLength(new MatOfPoint2f(x.toArray()), true)
+        ));
+
+        List<MatOfPoint> biggestCounters = new ArrayList<>();
+        biggestCounters.add(biggestCounter.orElseThrow(
+                () -> new DetectException("Not detected")
+        ));
+
+        Imgproc.drawContours(image, biggestCounters, -1, new Scalar(0, 255, 0));
+        Imgcodecs.imwrite(pathWrite, image);
+
+        image.release();
         greySrc.release();
         detectedEdges.release();
+        edgesCopy.release();
+        hierarchy.release();
     }
 
     private void checkValidity(String path, int[] kernel, boolean isNeededKernel, int cascadeVariant) throws DetectException {
@@ -134,7 +156,7 @@ public class Detector implements IDetectable {
 
         try (OutputStream out = new FileOutputStream(path);
              BufferedOutputStream bout = new BufferedOutputStream(out);
-             DataOutputStream dout = new DataOutputStream(bout);)
+             DataOutputStream dout = new DataOutputStream(bout))
         {
             dout.writeInt(image.rows());
             dout.writeInt(image.cols());
@@ -160,7 +182,7 @@ public class Detector implements IDetectable {
         try (
             InputStream in = new FileInputStream(path);
             BufferedInputStream bin = new BufferedInputStream(in);
-            DataInputStream din = new DataInputStream(bin);
+            DataInputStream din = new DataInputStream(bin)
         )
         {
             int rows = din.readInt();
