@@ -62,15 +62,13 @@ public class Detector implements IDetectable {
         imageRead.release();
     }
 
-    public void edgeDetect(String pathRead, String pathWrite, int[] kernelSettings) throws DetectException {
+    public void edgeDetect(String pathRead, String pathWrite, int[] kernelSettings, int[] preparingSettings) throws DetectException {
         checkValidity(pathRead, kernelSettings, true, JackalTypes.DEFAULT);
         Mat image = Imgcodecs.imread(pathRead);
         Mat greySrc = getGrayMat(pathRead, pathWrite);
         Mat detectedEdges = new Mat();
 
-        Imgproc.blur(greySrc,
-                     detectedEdges,
-                     new Size(3, 3));
+        prepareImage(greySrc, detectedEdges, new Size(preparingSettings[0], preparingSettings[1]), preparingSettings[2]);
 
         Imgproc.Canny(detectedEdges,
                       detectedEdges,
@@ -81,18 +79,26 @@ public class Detector implements IDetectable {
         Mat hierarchy = new Mat();
         Mat mask = new Mat();
 
-        List<MatOfPoint> counters = new ArrayList<>();
+        List<MatOfPoint> contours = new ArrayList<>();
         Imgproc.findContours(edgesCopy,
-                             counters,
+                             contours,
                              hierarchy,
-                             Imgproc.RETR_LIST,
-                             Imgproc.CHAIN_APPROX_SIMPLE);
+                             Imgproc.RETR_TREE,
+                             Imgproc.CHAIN_APPROX_NONE);
+        System.out.println(contours.size());
 
-        MatOfPoint biggestCounter = counters.stream().max(
+        MatOfPoint biggestCounter = contours.stream().max(
                 Comparator.comparingDouble(
                     x -> Imgproc.arcLength(new MatOfPoint2f(x.toArray()), false)
         )).orElseThrow(() -> new DetectException("Not detected"));
 
+        List<MatOfPoint> biggestContour = new ArrayList<>();
+        biggestContour.add(biggestCounter);
+
+        Imgproc.drawContours(image, biggestContour, 0, new Scalar(0, 255, 0));
+        Imgcodecs.imwrite("src/test/resources/test/testBiggestContour.png", image);
+
+        // Проблемы с маской (она пустая)
         Imgproc.grabCut(image,
                         mask,
                         Imgproc.boundingRect(biggestCounter),
@@ -117,6 +123,24 @@ public class Detector implements IDetectable {
         detectedEdges.release();
         edgesCopy.release();
         hierarchy.release();
+    }
+
+    private void prepareImage(Mat srcImage, Mat resultImage, Size kernelSize, int thresholdBinary) {
+        Mat blurImage = new Mat();
+        Mat binaryImage = new Mat();
+        Imgproc.blur(srcImage,
+                blurImage,
+                kernelSize);
+
+        Imgproc.threshold(blurImage,
+                binaryImage,
+                thresholdBinary, 255,
+                Imgproc.THRESH_BINARY_INV);
+
+        Imgproc.morphologyEx(binaryImage,
+                resultImage,
+                Imgproc.MORPH_CLOSE,
+                Imgproc.getStructuringElement(Imgproc.MORPH_RECT, kernelSize));
     }
 
     private void checkValidity(String path, int[] kernel, boolean isNeededKernel, int cascadeVariant) throws DetectException {
