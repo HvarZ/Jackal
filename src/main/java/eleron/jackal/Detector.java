@@ -66,18 +66,18 @@ public class Detector implements IDetectable {
         checkValidity(pathRead, kernelSettings, true, JackalTypes.DEFAULT);
         Mat image = Imgcodecs.imread(pathRead);
         Mat greySrc = getGrayMat(pathRead, pathWrite);
+        Mat preparingImage = new Mat();
         Mat detectedEdges = new Mat();
+        
+        prepareImage(greySrc, preparingImage, new Size(preparingSettings[0], preparingSettings[1]), preparingSettings[2]);
 
-        prepareImage(greySrc, detectedEdges, new Size(preparingSettings[0], preparingSettings[1]), preparingSettings[2]);
-
-        Imgproc.Canny(detectedEdges,
+        Imgproc.Canny(preparingImage,
                       detectedEdges,
                       kernelSettings[0], kernelSettings[1], kernelSettings[2],
             false);
 
         Mat edgesCopy = detectedEdges.clone();
         Mat hierarchy = new Mat();
-        Mat mask = new Mat();
 
         List<MatOfPoint> contours = new ArrayList<>();
         Imgproc.findContours(edgesCopy,
@@ -85,7 +85,8 @@ public class Detector implements IDetectable {
                              hierarchy,
                              Imgproc.RETR_TREE,
                              Imgproc.CHAIN_APPROX_NONE);
-        System.out.println(contours.size());
+
+        fillNestedContour(preparingImage, contours, hierarchy);
 
         MatOfPoint biggestCounter = contours.stream().max(
                 Comparator.comparingDouble(
@@ -97,10 +98,10 @@ public class Detector implements IDetectable {
 
         Imgproc.drawContours(image, biggestContour, 0, new Scalar(0, 255, 0));
         Imgcodecs.imwrite("src/test/resources/test/testBiggestContour.png", image);
+        Imgcodecs.imwrite("src/test/resources/test/testNested.png", preparingImage);
 
-        // Проблемы с маской (она пустая)
         Imgproc.grabCut(image,
-                        mask,
+                        preparingImage,
                         Imgproc.boundingRect(biggestCounter),
                         new Mat(),
                         new Mat(),
@@ -108,8 +109,7 @@ public class Detector implements IDetectable {
                         Imgproc.GC_INIT_WITH_RECT);
 
         Mat maskPR_FGD = new Mat();
-
-        Core.compare(mask, new Scalar(Imgproc.GC_PR_FGD), maskPR_FGD,
+        Core.compare(preparingImage, new Scalar(Imgproc.GC_PR_FGD), maskPR_FGD,
                 Core.CMP_EQ);
 
         Mat resultPR_FGD = new Mat(image.rows(), image.cols(), CvType.CV_8UC3,
@@ -124,6 +124,19 @@ public class Detector implements IDetectable {
         edgesCopy.release();
         hierarchy.release();
     }
+
+    private void fillNestedContour(Mat img, List<MatOfPoint> contours, Mat hierarchy) {
+        List<MatOfPoint> fillingContours = new ArrayList<>();
+        for (int i = 0; i < hierarchy.rows(); ++i) {
+            for (int j = 0; j < hierarchy.cols(); ++j) {
+                if (hierarchy.get(i, j)[2] != -1) {
+                    fillingContours.add(contours.get(j));
+                }
+            }
+        }
+        Imgproc.fillPoly(img, fillingContours, new Scalar(255, 255, 255));
+    }
+
 
     private void prepareImage(Mat srcImage, Mat resultImage, Size kernelSize, int thresholdBinary) {
         Mat blurImage = new Mat();
