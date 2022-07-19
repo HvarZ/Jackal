@@ -23,7 +23,7 @@ public class Detector implements IDetectable {
 
     @Override
     public void faceDetect(String pathRead, String pathWrite, int cascadeVariant) throws DetectException {
-        checkValidity(pathRead, null, false, cascadeVariant);
+        DetectorService.checkValidity(pathRead, null, false, cascadeVariant);
         if (!isLoaded) {
             classifier.load("src/main/resources/haarcascade_" + cascadeVariant + ".xml");
             isLoaded = true;
@@ -46,7 +46,7 @@ public class Detector implements IDetectable {
 
     @Override
     public void faceDetectAndCut(String pathRead, String pathWrite, int cascadeVariant) throws DetectException {
-        checkValidity(pathRead, null, false, cascadeVariant);
+        DetectorService.checkValidity(pathRead, null, false, cascadeVariant);
         if (!isLoaded) {
             classifier.load("src/main/resources/haarcascade_" + cascadeVariant + ".xml");
             isLoaded = true;
@@ -62,118 +62,47 @@ public class Detector implements IDetectable {
         imageRead.release();
     }
 
-    public void edgeDetect(String pathRead, String pathWrite, int[] kernelSettings, int[] preparingSettings) throws DetectException {
-        checkValidity(pathRead, kernelSettings, true, JackalTypes.DEFAULT);
+
+
+    @Override
+    public void magicWand(String pathRead, String pathWrite, int[] kernelSettings, int[] preparingSettings) throws DetectException {
+        DetectorService.checkValidity(pathRead, kernelSettings, true, JackalTypes.DEFAULT);
         Mat image = Imgcodecs.imread(pathRead);
-        Mat greySrc = getGrayMat(pathRead, pathWrite);
+        Mat greySrc = DetectorService.getGrayMat(pathRead, pathWrite);
         Mat preparingImage = new Mat();
         Mat detectedEdges = new Mat();
 
-        prepareImage(greySrc, preparingImage, new Size(preparingSettings[0], preparingSettings[1]), preparingSettings[2]);
+        DetectorService.prepareImage(greySrc, preparingImage, new Size(preparingSettings[0], preparingSettings[1]), preparingSettings[2]);
 
         Imgproc.Canny(preparingImage,
-                      detectedEdges,
-                      kernelSettings[0], kernelSettings[1], kernelSettings[2],
-            false);
+                detectedEdges,
+                kernelSettings[0], kernelSettings[1], kernelSettings[2],
+                false);
 
-        Mat edgesCopy = detectedEdges.clone();
         Mat hierarchy = new Mat();
 
         List<MatOfPoint> contours = new ArrayList<>();
-        Imgproc.findContours(edgesCopy,
-                             contours,
-                             hierarchy,
-                             Imgproc.RETR_TREE,
-                             Imgproc.CHAIN_APPROX_NONE);
+        Imgproc.findContours(detectedEdges,
+                contours,
+                hierarchy,
+                Imgproc.RETR_TREE,
+                Imgproc.CHAIN_APPROX_NONE);
 
-        fillNestedContour(preparingImage, contours, hierarchy);
+        DetectorService.fillNestedContour(preparingImage, contours, hierarchy);
 
-        setBlackBackground(image, preparingImage);
+        DetectorService.setBlackBackground(image, preparingImage);
         Imgcodecs.imwrite(pathWrite, image);
 
         image.release();
         greySrc.release();
         detectedEdges.release();
-        edgesCopy.release();
         hierarchy.release();
+        preparingImage.release();
     }
 
-    private MatOfPoint findBiggestCounter(List<MatOfPoint> contours) throws DetectException {
-        return contours.stream().max(
-                Comparator.comparingDouble(
-                        x -> Imgproc.arcLength(new MatOfPoint2f(x.toArray()), false)
-                )).orElseThrow(() -> new DetectException("Not detected"));
-    }
-    private void setBlackBackground(Mat image, Mat mask) {
-        for (int i = 0; i < mask.rows(); ++i) {
-            for (int j = 0; j < mask.cols(); ++j) {
-                if (mask.get(i, j)[0] == 0) {
-                    image.put(i, j, new byte[image.channels()]);
-                }
-            }
-        }
-    }
+    @Override
+    public void findAndBlur(String pathRead, String pathWrite) throws DetectException {
 
-    private void fillNestedContour(Mat img, List<MatOfPoint> contours, Mat hierarchy) {
-        List<MatOfPoint> fillingContours = new ArrayList<>();
-        for (int i = 0; i < hierarchy.rows(); ++i) {
-            for (int j = 0; j < hierarchy.cols(); ++j) {
-                if (hierarchy.get(i, j)[2] != -1) {
-                    fillingContours.add(contours.get(j));
-                }
-            }
-        }
-        Imgproc.fillPoly(img, fillingContours, new Scalar(255, 255, 255));
-    }
-
-
-    private void prepareImage(Mat srcImage, Mat resultImage, Size kernelSize, int thresholdBinary) {
-        Mat blurImage = new Mat();
-        Mat binaryImage = new Mat();
-        Imgproc.blur(srcImage,
-                blurImage,
-                kernelSize);
-
-        Imgproc.threshold(blurImage,
-                binaryImage,
-                thresholdBinary, 255,
-                Imgproc.THRESH_BINARY_INV);
-
-        Imgproc.morphologyEx(binaryImage,
-                resultImage,
-                Imgproc.MORPH_CLOSE,
-                Imgproc.getStructuringElement(Imgproc.MORPH_RECT, kernelSize));
-    }
-
-    private void checkValidity(String path, int[] kernel, boolean isNeededKernel, int cascadeVariant) throws DetectException {
-        if (!(new File(path).exists())) {
-            throw new DetectException("File (" + path + ") not found");
-        }
-        if (cascadeVariant < 0 || cascadeVariant > 2) {
-            throw new DetectException("Invalid cascade number: cascade number valid only (> 0 && < 3)");
-        }
-        if (isNeededKernel && kernel != null && kernel.length != 3) {
-            throw new DetectException("Invalid size of kernelSettings: != 3");
-        }
-    }
-
-
-    private Mat getGrayMat(String pathRead, String pathWrite) throws DetectException {
-        checkValidity(pathRead, null, false, JackalTypes.DEFAULT);
-        Mat imageRead = Imgcodecs.imread(pathRead);
-        Mat greyImage = new Mat(imageRead.size(), imageRead.type());
-        Imgproc.cvtColor(imageRead, greyImage, Imgproc.COLOR_BGR2GRAY);
-        Imgcodecs.imwrite(pathWrite, greyImage);
-        imageRead.release();
-
-        return greyImage;
-    }
-
-
-    private MatOfRect detect(Mat imageRead) {
-        MatOfRect faceDetections = new MatOfRect();
-        classifier.detectMultiScale(imageRead, faceDetections);
-        return faceDetections;
     }
 
     public static boolean saveImageBinary(Mat image, String path) {
@@ -266,5 +195,10 @@ public class Detector implements IDetectable {
         } catch (IOException e) {
             return new Mat();
         }
+    }
+    private MatOfRect detect(Mat imageRead) {
+        MatOfRect faceDetections = new MatOfRect();
+        classifier.detectMultiScale(imageRead, faceDetections);
+        return faceDetections;
     }
 }
