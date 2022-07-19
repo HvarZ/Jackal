@@ -68,7 +68,7 @@ public class Detector implements IDetectable {
         Mat greySrc = getGrayMat(pathRead, pathWrite);
         Mat preparingImage = new Mat();
         Mat detectedEdges = new Mat();
-        
+
         prepareImage(greySrc, preparingImage, new Size(preparingSettings[0], preparingSettings[1]), preparingSettings[2]);
 
         Imgproc.Canny(preparingImage,
@@ -88,41 +88,30 @@ public class Detector implements IDetectable {
 
         fillNestedContour(preparingImage, contours, hierarchy);
 
-        MatOfPoint biggestCounter = contours.stream().max(
-                Comparator.comparingDouble(
-                    x -> Imgproc.arcLength(new MatOfPoint2f(x.toArray()), false)
-        )).orElseThrow(() -> new DetectException("Not detected"));
-
-        List<MatOfPoint> biggestContour = new ArrayList<>();
-        biggestContour.add(biggestCounter);
-
-        Imgproc.drawContours(image, biggestContour, 0, new Scalar(0, 255, 0));
-        Imgcodecs.imwrite("src/test/resources/test/testBiggestContour.png", image);
-        Imgcodecs.imwrite("src/test/resources/test/testNested.png", preparingImage);
-
-        Imgproc.grabCut(image,
-                        preparingImage,
-                        Imgproc.boundingRect(biggestCounter),
-                        new Mat(),
-                        new Mat(),
-                        1,
-                        Imgproc.GC_INIT_WITH_RECT);
-
-        Mat maskPR_FGD = new Mat();
-        Core.compare(preparingImage, new Scalar(Imgproc.GC_PR_FGD), maskPR_FGD,
-                Core.CMP_EQ);
-
-        Mat resultPR_FGD = new Mat(image.rows(), image.cols(), CvType.CV_8UC3,
-                new Scalar(0, 0, 0));
-
-        image.copyTo(resultPR_FGD, maskPR_FGD);
-        Imgcodecs.imwrite(pathWrite, resultPR_FGD);
+        setBlackBackground(image, preparingImage);
+        Imgcodecs.imwrite(pathWrite, image);
 
         image.release();
         greySrc.release();
         detectedEdges.release();
         edgesCopy.release();
         hierarchy.release();
+    }
+
+    private MatOfPoint findBiggestCounter(List<MatOfPoint> contours) throws DetectException {
+        return contours.stream().max(
+                Comparator.comparingDouble(
+                        x -> Imgproc.arcLength(new MatOfPoint2f(x.toArray()), false)
+                )).orElseThrow(() -> new DetectException("Not detected"));
+    }
+    private void setBlackBackground(Mat image, Mat mask) {
+        for (int i = 0; i < mask.rows(); ++i) {
+            for (int j = 0; j < mask.cols(); ++j) {
+                if (mask.get(i, j)[0] == 0) {
+                    image.put(i, j, new byte[image.channels()]);
+                }
+            }
+        }
     }
 
     private void fillNestedContour(Mat img, List<MatOfPoint> contours, Mat hierarchy) {
