@@ -10,7 +10,7 @@ public class BackgroundBlurTest {
                     "src/test/resources/backgroundBlurResults/backgroundBlurResult.png");
 
             detector.backgroundBlur(
-                    "src/test/resources/main/TestBlurbackground.png",
+                    "src/test/resources/main/TestFaceDetectImage.png",
                     "src/test/resources/backgroundBlurResults/backgroundBlurResult2.png"
             );
         } catch (DetectException e) {
