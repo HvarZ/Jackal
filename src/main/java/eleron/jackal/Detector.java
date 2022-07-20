@@ -27,10 +27,11 @@ public class Detector implements IDetectable {
             isLoaded = true;
         }
         Mat imageRead = Imgcodecs.imread(pathRead);
-        MatOfRect faceDetections = detect(imageRead);
+        MatOfRect faceDetections = new MatOfRect();
+        classifier.detectMultiScale(imageRead, faceDetections);
         Rect result = Arrays.stream(
-                faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width)).orElseThrow(() ->
-                new DetectException("Not detected"));
+                faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width))
+                .orElseThrow(() -> new DetectException("Not detected"));
 
         imageRead.release();
         return result;
@@ -44,13 +45,9 @@ public class Detector implements IDetectable {
             isLoaded = true;
         }
         Mat imageRead = Imgcodecs.imread(pathRead);
-        MatOfRect faceDetections = detect(imageRead);
-        Optional<Rect> optionalRect = Arrays.stream(
-                faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width)
-        );
-        Imgcodecs.imwrite(pathWrite, new Mat(
-                imageRead, optionalRect.orElseThrow(() -> new DetectException("Not detected"))
-        ));
+        Rect faceRect = faceDetect(pathRead);
+
+        Imgcodecs.imwrite(pathWrite, new Mat(imageRead, faceRect));
         imageRead.release();
     }
 
@@ -203,10 +200,5 @@ public class Detector implements IDetectable {
         } catch (IOException e) {
             return new Mat();
         }
-    }
-    private MatOfRect detect(Mat imageRead) {
-        MatOfRect faceDetections = new MatOfRect();
-        classifier.detectMultiScale(imageRead, faceDetections);
-        return faceDetections;
     }
 }
