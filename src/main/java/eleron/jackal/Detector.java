@@ -21,8 +21,7 @@ public class Detector implements IDetectable {
         isLoaded = false;
     }
 
-    @Override
-    public void faceDetect(String pathRead, String pathWrite, int cascadeVariant) throws DetectException {
+    private Rect faceDetect(String pathRead, int cascadeVariant) throws DetectException {
         DetectorService.checkValidity(pathRead, null, false, cascadeVariant);
         if (!isLoaded) {
             classifier.load("src/main/resources/haarcascade_" + cascadeVariant + ".xml");
@@ -30,18 +29,12 @@ public class Detector implements IDetectable {
         }
         Mat imageRead = Imgcodecs.imread(pathRead);
         MatOfRect faceDetections = detect(imageRead);
+        Rect result = Arrays.stream(
+                faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width)).orElseThrow(() ->
+                new DetectException("Not detected"));
 
-        for (Rect rect : faceDetections.toArray()) {
-            Imgproc.rectangle(
-                    imageRead,
-                    new Point(rect.x, rect.y),
-                    new Point(rect.x + rect.width, rect.y + rect.height),
-                    new Scalar(0, 0, 255),
-                    3
-            );
-        }
-        Imgcodecs.imwrite(pathWrite, imageRead);
         imageRead.release();
+        return result;
     }
 
     @Override
@@ -101,8 +94,23 @@ public class Detector implements IDetectable {
     }
 
     @Override
-    public void findAndBlur(String pathRead, String pathWrite) throws DetectException {
+    public void backgroundBlur(String pathRead, String pathWrite) throws DetectException {
+        Mat image = Imgcodecs.imread(pathRead);
 
+        Rect faceRect = faceDetect(pathRead, JackalTypes.FRONTAL_FACE);
+        DetectorService.scaleRect(faceRect, 2.5, 3);
+
+        Mat blurImage = image.clone();
+        Mat face = new Mat(image, faceRect);
+        Mat roi = blurImage.submat(new Rect(faceRect.x, faceRect.y, faceRect.width, faceRect.height));
+
+        Imgproc.GaussianBlur(image, blurImage, new Size(41, 41), 140);
+        face.copyTo(roi);
+
+        Imgcodecs.imwrite(pathWrite, blurImage);
+
+        face.release();
+        image.release();
     }
 
     public static boolean saveImageBinary(Mat image, String path) {
@@ -146,7 +154,7 @@ public class Detector implements IDetectable {
         return true;
     }
 
-    private static Mat loadMatBinary(String path) {
+    public static Mat loadMatBinary(String path) {
         if (path == null || path.length() < 5 || !path.endsWith(".mat")) {
             return new Mat();
         }
