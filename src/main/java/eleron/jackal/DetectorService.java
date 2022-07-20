@@ -69,6 +69,27 @@ public class DetectorService {
         }
     }
 
+    public static void scaleRect(Rect rect, double coefficient) {
+        scaleRect(rect, coefficient, coefficient);
+    }
+
+    public static void scaleRect(Rect rect, double xCoefficient, double yCoefficient) {
+        Point centrePoint = getCentre(rect);
+        double newWidth = rect.width * Math.sqrt(xCoefficient);
+        double newHeight = rect.height * Math.sqrt(yCoefficient);
+
+        rect.set(new double[]{
+                centrePoint.x - newWidth / 2,
+                centrePoint.y - newHeight / 2,
+                newWidth,
+                newHeight
+        });
+    }
+
+    public static Point getCentre(Rect rect) {
+        return new Point(rect.x + (double)rect.width / 2, rect.y + (double)rect.height / 2);
+    }
+
 
     public static Mat getGrayMat(String pathRead, String pathWrite) throws DetectException {
         checkValidity(pathRead, null, false, JackalTypes.DEFAULT);
