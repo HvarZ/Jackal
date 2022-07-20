@@ -22,7 +22,6 @@ public class Detector implements IDetectable {
     }
 
     private Rect faceDetect(String pathRead) throws DetectException {
-        DetectorService.checkValidity(pathRead, null, false);
         if (!isLoaded) {
             classifier.load("src/main/resources/haarcascade_1.xml");
             isLoaded = true;
@@ -53,6 +52,27 @@ public class Detector implements IDetectable {
                 imageRead, optionalRect.orElseThrow(() -> new DetectException("Not detected"))
         ));
         imageRead.release();
+    }
+
+    @Override
+    public void backgroundBlur(String pathRead, String pathWrite) throws DetectException {
+        DetectorService.checkValidity(pathRead, null, false);
+        Mat image = Imgcodecs.imread(pathRead);
+
+        Rect faceRect = faceDetect(pathRead);
+        DetectorService.scaleRect(faceRect, 2.5, 3);
+
+        Mat blurImage = image.clone();
+        Mat face = new Mat(image, faceRect);
+        Mat roi = blurImage.submat(new Rect(faceRect.x, faceRect.y, faceRect.width, faceRect.height));
+
+        Imgproc.GaussianBlur(image, blurImage, new Size(41, 41), 140);
+        face.copyTo(roi);
+
+        Imgcodecs.imwrite(pathWrite, blurImage);
+
+        face.release();
+        image.release();
     }
 
 
@@ -91,26 +111,6 @@ public class Detector implements IDetectable {
         detectedEdges.release();
         hierarchy.release();
         preparingImage.release();
-    }
-
-    @Override
-    public void backgroundBlur(String pathRead, String pathWrite) throws DetectException {
-        Mat image = Imgcodecs.imread(pathRead);
-
-        Rect faceRect = faceDetect(pathRead);
-        DetectorService.scaleRect(faceRect, 2.5, 3);
-
-        Mat blurImage = image.clone();
-        Mat face = new Mat(image, faceRect);
-        Mat roi = blurImage.submat(new Rect(faceRect.x, faceRect.y, faceRect.width, faceRect.height));
-
-        Imgproc.GaussianBlur(image, blurImage, new Size(41, 41), 140);
-        face.copyTo(roi);
-
-        Imgcodecs.imwrite(pathWrite, blurImage);
-
-        face.release();
-        image.release();
     }
 
     public static boolean saveImageBinary(Mat image, String path) {
