@@ -21,10 +21,10 @@ public class Detector implements IDetectable {
         isLoaded = false;
     }
 
-    private Rect faceDetect(String pathRead, int cascadeVariant) throws DetectException {
-        DetectorService.checkValidity(pathRead, null, false, cascadeVariant);
+    private Rect faceDetect(String pathRead) throws DetectException {
+        DetectorService.checkValidity(pathRead, null, false);
         if (!isLoaded) {
-            classifier.load("src/main/resources/haarcascade_" + cascadeVariant + ".xml");
+            classifier.load("src/main/resources/haarcascade_1.xml");
             isLoaded = true;
         }
         Mat imageRead = Imgcodecs.imread(pathRead);
@@ -38,10 +38,10 @@ public class Detector implements IDetectable {
     }
 
     @Override
-    public void faceDetectAndCut(String pathRead, String pathWrite, int cascadeVariant) throws DetectException {
-        DetectorService.checkValidity(pathRead, null, false, cascadeVariant);
+    public void faceDetectAndCut(String pathRead, String pathWrite) throws DetectException {
+        DetectorService.checkValidity(pathRead, null, false);
         if (!isLoaded) {
-            classifier.load("src/main/resources/haarcascade_" + cascadeVariant + ".xml");
+            classifier.load("src/main/resources/haarcascade_1.xml");
             isLoaded = true;
         }
         Mat imageRead = Imgcodecs.imread(pathRead);
@@ -59,7 +59,7 @@ public class Detector implements IDetectable {
 
     @Override
     public void magicWand(String pathRead, String pathWrite, int[] kernelSettings, int[] preparingSettings) throws DetectException {
-        DetectorService.checkValidity(pathRead, kernelSettings, true, JackalTypes.DEFAULT);
+        DetectorService.checkValidity(pathRead, kernelSettings, true);
         Mat image = Imgcodecs.imread(pathRead);
         Mat greySrc = DetectorService.getGrayMat(pathRead, pathWrite);
         Mat preparingImage = new Mat();
@@ -97,7 +97,7 @@ public class Detector implements IDetectable {
     public void backgroundBlur(String pathRead, String pathWrite) throws DetectException {
         Mat image = Imgcodecs.imread(pathRead);
 
-        Rect faceRect = faceDetect(pathRead, JackalTypes.FRONTAL_FACE);
+        Rect faceRect = faceDetect(pathRead);
         DetectorService.scaleRect(faceRect, 2.5, 3);
 
         Mat blurImage = image.clone();
@@ -165,9 +165,9 @@ public class Detector implements IDetectable {
         }
 
         try (
-            InputStream in = new FileInputStream(path);
-            BufferedInputStream bin = new BufferedInputStream(in);
-            DataInputStream din = new DataInputStream(bin)
+                InputStream in = new FileInputStream(path);
+                BufferedInputStream bin = new BufferedInputStream(in);
+                DataInputStream din = new DataInputStream(bin)
         )
         {
             int rows = din.readInt();
