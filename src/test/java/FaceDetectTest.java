@@ -1,34 +1,28 @@
 import eleron.jackal.DetectException;
 import eleron.jackal.Detector;
-import eleron.jackal.IDetectable;
-import eleron.jackal.JackalTypes;
 
 public class FaceDetectTest {
     public static void main(String[] args) {
         try {
-            IDetectable detector = new Detector();
-            detector.faceDetect(
+            Detector detector = new Detector();
+            detector.backgroundBlur(
             "src/test/resources/main/TestFaceDetectImage.png",
-            "src/test/resources/detectResults/TestFaceDetectResultImage.png",
-                    JackalTypes.FRONTAL_FACE
+            "src/test/resources/detectResults/TestFaceDetectResultImage.png"
                     );
-            detector.faceDetect(
+            detector.backgroundBlur(
             "src/test/resources/main/TestFaceDetectImageOnePerson.png",
-            "src/test/resources/detectResults/TestFaceDetectResultOnePerson.png",
-                    JackalTypes.FRONTAL_FACE
+            "src/test/resources/detectResults/TestFaceDetectResultOnePerson.png"
             );
 
-            IDetectable detector_2 = new Detector();
-            detector_2.faceDetect(
+            Detector detector_2 = new Detector();
+            detector_2.backgroundBlur(
             "src/test/resources/main/TestFaceDetectImage.png",
-            "src/test/resources/detectResults/TestFaceDetectResultImage_2.png",
-                    JackalTypes.FRONTAL_FACE_2
+            "src/test/resources/detectResults/TestFaceDetectResultImage_2.png"
             );
 
-            detector_2.faceDetect(
+            detector_2.backgroundBlur(
             "src/test/resources/main/TestFaceDetectImageOnePerson.png",
-            "src/test/resources/detectResults/TestFaceDetectResultOnePerson_2.png",
-                    JackalTypes.FRONTAL_FACE_2
+            "src/test/resources/detectResults/TestFaceDetectResultOnePerson_2.png"
             );
 
 
