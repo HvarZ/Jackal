@@ -179,7 +179,7 @@ final class DetectorService {
         if (channels == 1) {
             type = CvType.CV_8UC1;
         } else if (channels == 3) {
-            type = CvType.CV_8UC1;
+            type = CvType.CV_8UC3;
         } else if (channels == 4) {
             type = CvType.CV_8UC4;
         } else {
