@@ -29,7 +29,9 @@ public final class Detector implements IDetectable {
             isLoaded = true;
         }
         Mat imageRead = Imgcodecs.imread(pathRead);
-        Rect faceRect = faceDetect(pathRead);
+        Mat imageCopy = imageRead.clone();
+
+        Rect faceRect = faceDetect(imageCopy);
 
         Imgcodecs.imwrite(pathWrite, new Mat(imageRead, faceRect));
         imageRead.release();
@@ -171,12 +173,12 @@ public final class Detector implements IDetectable {
         Imgcodecs.imwrite(pathWrite, image);
     }
 
-    private Rect faceDetect(String pathRead) throws DetectException {
+    private Rect faceDetect(Mat imageRead) throws DetectException {
         if (!isLoaded) {
             classifier.load("src/main/resources/haarcascade_1.xml");
             isLoaded = true;
         }
-        Mat imageRead = Imgcodecs.imread(pathRead);
+
         MatOfRect faceDetections = new MatOfRect();
         classifier.detectMultiScale(imageRead, faceDetections);
         Rect result = Arrays.stream(
@@ -191,7 +193,9 @@ public final class Detector implements IDetectable {
         DetectorService.checkValidity(pathRead, null, false);
         Mat image = Imgcodecs.imread(pathRead);
 
-        Rect faceRect = faceDetect(pathRead);
+        Mat imageCopy = image.clone();
+
+        Rect faceRect = faceDetect(imageCopy);
         DetectorService.scaleRect(faceRect, 2.5, 3);
         DetectorService.correctFaceRect(faceRect, image);
 
