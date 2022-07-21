@@ -5,19 +5,17 @@ import org.opencv.core.Mat;
 import org.opencv.imgcodecs.Imgcodecs;
 
 public class Converter {
-    public static void convertBytesToImage(byte[] imagesBytes, String pathWrite) throws DetectException {
+    public static void convertBytesToImage(final byte[] imagesBytes, String pathWrite) throws DetectException {
         Mat image = loadMatBinary(imagesBytes);
         Imgcodecs.imwrite(pathWrite, image);
     }
 
     public static byte[] convertImageToBytes(String pathRead) throws DetectException {
-        Mat image = new Mat();
-        Imgcodecs.imwrite(pathRead, image);
-
+        Mat image = Imgcodecs.imread(pathRead);
         return saveImageBinary(image);
     }
 
-    public static byte[] saveImageBinary(Mat image) throws DetectException {
+    protected static byte[] saveImageBinary(Mat image) throws DetectException {
         if (image == null || image.empty()) {
             throw new DetectException("saveImageBinary: image is empty");
         }
@@ -47,7 +45,7 @@ public class Converter {
         return DetectorService.mergeBytes(imageParameters, buffer);
     }
 
-    public static Mat loadMatBinary(byte[] imageBinary) throws DetectException {
+    protected static Mat loadMatBinary(final byte[] imageBinary) throws DetectException {
         if (imageBinary.length == 0) {
             throw new DetectException("loadMatBinary: imageBinary is empty");
         }
@@ -75,8 +73,9 @@ public class Converter {
         }
         Mat image = new Mat(rows, cols, type);
 
-        DetectorService.removeParameters(imageBinary);
-        image.put(0, 0, imageBinary);
+        byte[] imageWithoutParameters = imageBinary.clone();
+        DetectorService.removeParameters(imageWithoutParameters);
+        image.put(0, 0, imageWithoutParameters);
 
         return image;
     }
