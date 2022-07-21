@@ -19,4 +19,5 @@ public final class JackalTypes {
     public final static int MAX_BRIGHTNESS = 255;
 
     public final static int KERNEL_SIZE = 3;
+    public final static byte INT_IMP_BYTES = 2;
 }
