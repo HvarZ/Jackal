@@ -9,7 +9,7 @@ import org.opencv.objdetect.CascadeClassifier;
 import java.io.*;
 import java.util.*;
 
-public class Detector implements IDetectable {
+public final class Detector implements IDetectable {
     static {
         OpenCV.loadLocally();
     }
@@ -111,31 +111,12 @@ public class Detector implements IDetectable {
     }
 
     public static boolean saveImageBinary(Mat image, String path) {
-        if (image == null || image.empty()) {
+        byte[] buffer;
+        try {
+            buffer = DetectorService.saveImageBinary(image);
+        } catch (DetectException e) {
             return false;
         }
-        if (path == null || path.length() < 5 || !path.endsWith(".mat"))
-            return false;
-        if (image.depth() == CvType.CV_8U) {
-        } else if (image.depth() == CvType.CV_16U) {
-            Mat m_16 = new Mat();
-            image.convertTo(m_16, CvType.CV_8U, 255.0 / 65535);
-            image = m_16;
-        } else if (image.depth() == CvType.CV_32F) {
-            Mat m_32 = new Mat();
-            image.convertTo(m_32, CvType.CV_8U, 255);
-            image = m_32;
-        } else {
-            return false;
-        }
-
-        if (image.channels() == 2 || image.channels() > 4) {
-            return false;
-        }
-
-        byte[] buffer = new byte[image.channels() * image.cols() * image.rows()];
-        image.get(0, 0, buffer);
-
         try (OutputStream out = new FileOutputStream(path);
              BufferedOutputStream bout = new BufferedOutputStream(out);
              DataOutputStream dout = new DataOutputStream(bout))
