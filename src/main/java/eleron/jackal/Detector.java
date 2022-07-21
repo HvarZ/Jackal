@@ -6,7 +6,6 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
-import java.io.*;
 import java.util.*;
 
 public final class Detector implements IDetectable {
@@ -48,14 +47,15 @@ public final class Detector implements IDetectable {
     @Override
     public byte[] backgroundBlur(String pathRead) throws DetectException {
         Mat blurImage = getBlurBackground(pathRead);
-        return DetectorService.saveImageBinary(blurImage);
+        return Converter.saveImageBinary(blurImage);
     }
 
     @Override
     public byte[] backgroundBlur(byte[] imageBytes) throws DetectException {
-        Mat image = DetectorService.loadMatBinary(imageBytes);
+        Mat image = Converter.loadMatBinary(imageBytes);
+        Mat blurImage = getBlurBackground(image);
 
-        return new byte[1];
+        return Converter.saveImageBinary(blurImage);
     }
 
 
@@ -95,84 +95,6 @@ public final class Detector implements IDetectable {
         preparingImage.release();
     }
 
-    public static boolean saveImageBinary(Mat image, String path) {
-        byte[] buffer;
-        try {
-            buffer = DetectorService.saveImageBinary(image);
-        } catch (DetectException e) {
-            return false;
-        }
-        try (OutputStream out = new FileOutputStream(path);
-             BufferedOutputStream bout = new BufferedOutputStream(out);
-             DataOutputStream dout = new DataOutputStream(bout))
-        {
-            dout.writeInt(image.rows());
-            dout.writeInt(image.cols());
-            dout.writeInt(image.channels());
-            dout.write(buffer);
-            dout.flush();
-        } catch (IOException e) {
-            return false;
-        }
-        return true;
-    }
-
-    public static Mat loadMatBinary(String path) {
-        if (path == null || path.length() < 5 || !path.endsWith(".mat")) {
-            return new Mat();
-        }
-
-        File file = new File(path);
-        if (!file.exists() || !file.isFile()) {
-            return new Mat();
-        }
-
-        try (
-                InputStream in = new FileInputStream(path);
-                BufferedInputStream bin = new BufferedInputStream(in);
-                DataInputStream din = new DataInputStream(bin)
-        )
-        {
-            int rows = din.readInt();
-            if (rows < 1) {
-                return new Mat();
-            }
-            int cols = din.readInt();
-            if (cols < 1) {
-                return new Mat();
-            }
-            int ch = din.readInt();
-            int type;
-            if (ch == 1) {
-                type = CvType.CV_8UC1;
-            } else if (ch == 3) {
-                type = CvType.CV_8UC3;
-            } else if (ch == 4) {
-                type = CvType.CV_8UC4;
-            } else {
-                return new Mat();
-            }
-
-            int size = ch * cols * rows;
-            byte[] buf = new byte[size];
-            int resize = din.read(buf);
-            if (size != resize) {
-                return new Mat();
-            }
-
-            Mat image = new Mat(rows, cols, type);
-            image.put(0, 0, buf);
-            return image;
-        } catch (IOException e) {
-            return new Mat();
-        }
-    }
-
-    public static void convertBytesToImage(byte[] imagesBytes, String pathWrite) throws DetectException {
-        Mat image = DetectorService.loadMatBinary(imagesBytes);
-        Imgcodecs.imwrite(pathWrite, image);
-    }
-
     private Rect faceDetect(Mat imageRead) throws DetectException {
         if (!isLoaded) {
             classifier.load("src/main/resources/haarcascade_1.xml");
@@ -192,6 +114,14 @@ public final class Detector implements IDetectable {
     private Mat getBlurBackground(String pathRead) throws DetectException {
         DetectorService.checkValidity(pathRead, null, false);
         Mat image = Imgcodecs.imread(pathRead);
+
+        return getBlurBackground(image);
+    }
+
+    private Mat getBlurBackground(Mat image) throws DetectException {
+        if (image.empty()) {
+            throw new DetectException("getBlurBackground: image is empty");
+        }
 
         Mat imageCopy = image.clone();
 
