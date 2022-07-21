@@ -21,22 +21,6 @@ public final class Detector implements IDetectable {
         isLoaded = false;
     }
 
-    private Rect faceDetect(String pathRead) throws DetectException {
-        if (!isLoaded) {
-            classifier.load("src/main/resources/haarcascade_1.xml");
-            isLoaded = true;
-        }
-        Mat imageRead = Imgcodecs.imread(pathRead);
-        MatOfRect faceDetections = new MatOfRect();
-        classifier.detectMultiScale(imageRead, faceDetections);
-        Rect result = Arrays.stream(
-                faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width))
-                .orElseThrow(() -> new DetectException("Not detected"));
-
-        imageRead.release();
-        return result;
-    }
-
     @Override
     public void faceDetectAndCut(String pathRead, String pathWrite) throws DetectException {
         DetectorService.checkValidity(pathRead, null, false);
@@ -53,25 +37,24 @@ public final class Detector implements IDetectable {
 
     @Override
     public void backgroundBlur(String pathRead, String pathWrite) throws DetectException {
-        DetectorService.checkValidity(pathRead, null, false);
-        Mat image = Imgcodecs.imread(pathRead);
-
-        Rect faceRect = faceDetect(pathRead);
-        DetectorService.scaleRect(faceRect, 2.5, 3);
-
-        Mat blurImage = image.clone();
-        Mat face = new Mat(image, faceRect);
-        Mat roi = blurImage.submat(new Rect(faceRect.x, faceRect.y, faceRect.width, faceRect.height));
-
-        Imgproc.GaussianBlur(image, blurImage, new Size(41, 41), 140);
-        face.copyTo(roi);
-
+        Mat blurImage = getBlurBackground(pathRead);
         Imgcodecs.imwrite(pathWrite, blurImage);
 
-        face.release();
-        image.release();
+        blurImage.release();
     }
 
+    @Override
+    public byte[] backgroundBlur(String pathRead) throws DetectException {
+        Mat blurImage = getBlurBackground(pathRead);
+        return DetectorService.saveImageBinary(blurImage);
+    }
+
+    @Override
+    public byte[] backgroundBlur(byte[] imageBytes) throws DetectException {
+        Mat image = DetectorService.loadMatBinary(imageBytes);
+
+        return new byte[1];
+    }
 
 
     @Override
@@ -161,7 +144,7 @@ public final class Detector implements IDetectable {
             if (ch == 1) {
                 type = CvType.CV_8UC1;
             } else if (ch == 3) {
-                type = CvType.CV_8UC1;
+                type = CvType.CV_8UC3;
             } else if (ch == 4) {
                 type = CvType.CV_8UC4;
             } else {
@@ -181,5 +164,43 @@ public final class Detector implements IDetectable {
         } catch (IOException e) {
             return new Mat();
         }
+    }
+
+    public static void convertBytesToImage(byte[] imagesBytes, String pathWrite) throws DetectException {
+        Mat image = DetectorService.loadMatBinary(imagesBytes);
+        Imgcodecs.imwrite(pathWrite, image);
+    }
+
+    private Rect faceDetect(String pathRead) throws DetectException {
+        if (!isLoaded) {
+            classifier.load("src/main/resources/haarcascade_1.xml");
+            isLoaded = true;
+        }
+        Mat imageRead = Imgcodecs.imread(pathRead);
+        MatOfRect faceDetections = new MatOfRect();
+        classifier.detectMultiScale(imageRead, faceDetections);
+        Rect result = Arrays.stream(
+                        faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width))
+                .orElseThrow(() -> new DetectException("Not detected"));
+
+        imageRead.release();
+        return result;
+    }
+
+    private Mat getBlurBackground(String pathRead) throws DetectException {
+        DetectorService.checkValidity(pathRead, null, false);
+        Mat image = Imgcodecs.imread(pathRead);
+
+        Rect faceRect = faceDetect(pathRead);
+        DetectorService.scaleRect(faceRect, 2.5, 3);
+
+        Mat blurImage = image.clone();
+        Mat face = new Mat(image, faceRect);
+        Mat roi = blurImage.submat(new Rect(faceRect.x, faceRect.y, faceRect.width, faceRect.height));
+
+        Imgproc.GaussianBlur(image, blurImage, new Size(41, 41), 140);
+        face.copyTo(roi);
+
+        return blurImage;
     }
 }
