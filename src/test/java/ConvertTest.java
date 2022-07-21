@@ -1,3 +1,4 @@
+import eleron.jackal.Converter;
 import eleron.jackal.DetectException;
 import eleron.jackal.Detector;
 import eleron.jackal.IDetectable;
@@ -10,7 +11,7 @@ public class ConvertTest {
                 "src/test/resources/main/TestFaceDetectImageOnePerson.png"
             );
 
-            Detector.convertBytesToImage(
+            Converter.convertBytesToImage(
                     imageBytes,
                     "src/test/resources/convertingResults/converting.png"
             );
