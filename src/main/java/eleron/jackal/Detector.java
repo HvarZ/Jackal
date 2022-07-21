@@ -193,6 +193,7 @@ public final class Detector implements IDetectable {
 
         Rect faceRect = faceDetect(pathRead);
         DetectorService.scaleRect(faceRect, 2.5, 3);
+        DetectorService.correctFaceRect(faceRect, image);
 
         Mat blurImage = image.clone();
         Mat face = new Mat(image, faceRect);

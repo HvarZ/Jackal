@@ -106,6 +106,20 @@ final class DetectorService {
         });
     }
 
+    public static void correctFaceRect(Rect rect, Mat image) {
+        if (rect.x < 0) {
+            rect.x = 0;
+        } else if (rect.x + rect.width >= image.width()) {
+            rect.x = image.width() - rect.width;
+        }
+
+        if (rect.y < 0) {
+            rect.y = 0;
+        } else if (rect.y + rect.height >= image.width()) {
+            rect.y = image.width() - rect.height;
+        }
+    }
+
     public static Point getCentre(Rect rect) throws DetectException {
         if (rect.empty()) {
             throw new DetectException("getCentre: rect is empty");
