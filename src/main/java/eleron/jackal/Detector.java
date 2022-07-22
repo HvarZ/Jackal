@@ -20,30 +20,20 @@ public final class Detector implements IDetectable {
         isLoaded = false;
     }
 
-    private Mat faceDetectAndCut(Mat image) throws DetectException {
-        Mat imageCopy = image.clone();
-
-        Rect faceRect = faceDetect(imageCopy);
-        DetectorService.scaleRect(faceRect, JackalTypes.X_SCALE_COEFFICIENT, JackalTypes.Y_SCALE_COEFFICIENT);
-        DetectorService.correctFaceRect(faceRect, imageCopy);
-
-        return new Mat(image, faceRect);
-    }
-
     @Override
-    public void detect(String pathRead, String pathWrite, Modes mode) throws DetectException {
-        if (!(new File(pathRead).exists())) {
-            throw new DetectException("File (" + pathRead + ") not found");
+    public void detect(File pathRead, File pathWrite, Modes mode) throws DetectException {
+        if (!pathRead.exists()) {
+            throw new DetectException("File (" + pathRead.getPath() + ") not found");
         }
-        Mat image = Imgcodecs.imread(pathRead);
+        Mat image = Imgcodecs.imread(pathRead.getPath());
         switch (mode) {
             case Cutting -> {
                 Mat face = faceDetectAndCut(image);
-                Imgcodecs.imwrite(pathWrite, face);
+                Imgcodecs.imwrite(pathWrite.getPath(), face);
             }
             case Blurring -> {
                 Mat blurImage = getBlurBackground(image);
-                Imgcodecs.imwrite(pathWrite, blurImage);
+                Imgcodecs.imwrite(pathWrite.getPath(), blurImage);
             }
             default -> throw new DetectException("Unknown work mode");
         }
@@ -51,17 +41,17 @@ public final class Detector implements IDetectable {
     }
 
     @Override
-    public byte[] detect(String pathRead, Modes mode) throws DetectException {
-        if (!(new File(pathRead).exists())) {
-            throw new DetectException("File (" + pathRead + ") not found");
+    public byte[] detect(File pathRead, Modes mode) throws DetectException {
+        if (!pathRead.exists()) {
+            throw new DetectException("File (" + pathRead.getPath() + ") not found");
         }
-        Mat image = Imgcodecs.imread(pathRead);
+        Mat image = Imgcodecs.imread(pathRead.getPath());
         return detect(image, mode);
     }
 
     @Override
     public byte[] detect(byte[] imageBytes, Modes mode) throws DetectException {
-        Mat image = Converter.loadMatBinary(imageBytes);
+        Mat image = Imgcodecs.imdecode(new MatOfByte(imageBytes), Imgcodecs.IMREAD_UNCHANGED);
         return detect(image, mode);
     }
 
@@ -77,6 +67,16 @@ public final class Detector implements IDetectable {
             }
             default -> throw new DetectException("Unknown work mode");
         }
+    }
+
+    private Mat faceDetectAndCut(Mat image) throws DetectException {
+        Mat imageCopy = image.clone();
+
+        Rect faceRect = faceDetect(imageCopy);
+        DetectorService.scaleRect(faceRect, JackalTypes.X_SCALE_COEFFICIENT, JackalTypes.Y_SCALE_COEFFICIENT);
+        DetectorService.correctFaceRect(faceRect, imageCopy);
+
+        return new Mat(image, faceRect);
     }
 
     private Rect faceDetect(Mat imageRead) throws DetectException {
