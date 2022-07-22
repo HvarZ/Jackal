@@ -6,8 +6,8 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 
+import java.io.File;
 import java.util.*;
-
 public final class Detector implements IDetectable {
     static {
         OpenCV.loadLocally();
@@ -20,79 +20,63 @@ public final class Detector implements IDetectable {
         isLoaded = false;
     }
 
-    @Override
-    public void faceDetectAndCut(String pathRead, String pathWrite) throws DetectException {
-        DetectorService.checkValidity(pathRead, null, false);
-        if (!isLoaded) {
-            classifier.load("src/main/resources/haarcascade_1.xml");
-            isLoaded = true;
-        }
-        Mat imageRead = Imgcodecs.imread(pathRead);
-        Mat imageCopy = imageRead.clone();
+    private Mat faceDetectAndCut(Mat image) throws DetectException {
+        Mat imageCopy = image.clone();
 
         Rect faceRect = faceDetect(imageCopy);
+        DetectorService.scaleRect(faceRect, JackalTypes.X_SCALE_COEFFICIENT, JackalTypes.Y_SCALE_COEFFICIENT);
+        DetectorService.correctFaceRect(faceRect, imageCopy);
 
-        Imgcodecs.imwrite(pathWrite, new Mat(imageRead, faceRect));
-        imageRead.release();
+        return new Mat(image, faceRect);
     }
 
     @Override
-    public void backgroundBlur(String pathRead, String pathWrite) throws DetectException {
-        Mat blurImage = getBlurBackground(pathRead);
-        Imgcodecs.imwrite(pathWrite, blurImage);
-
-        blurImage.release();
-    }
-
-    @Override
-    public byte[] backgroundBlur(String pathRead) throws DetectException {
-        Mat blurImage = getBlurBackground(pathRead);
-        return Converter.saveImageBinary(blurImage);
-    }
-
-    @Override
-    public byte[] backgroundBlur(byte[] imageBytes) throws DetectException {
-        Mat image = Converter.loadMatBinary(imageBytes);
-        Mat blurImage = getBlurBackground(image);
-
-        return Converter.saveImageBinary(blurImage);
-    }
-
-
-    @Override
-    public void magicWand(String pathRead, String pathWrite, int[] kernelSettings, int[] preparingSettings) throws DetectException {
-        DetectorService.checkValidity(pathRead, kernelSettings, true);
+    public void detect(String pathRead, String pathWrite, Modes mode) throws DetectException {
+        if (!(new File(pathRead).exists())) {
+            throw new DetectException("File (" + pathRead + ") not found");
+        }
         Mat image = Imgcodecs.imread(pathRead);
-        Mat greySrc = DetectorService.getGrayMat(pathRead, pathWrite);
-        Mat preparingImage = new Mat();
-        Mat detectedEdges = new Mat();
-
-        DetectorService.prepareImage(greySrc, preparingImage, new Size(preparingSettings[0], preparingSettings[1]), preparingSettings[2]);
-
-        Imgproc.Canny(preparingImage,
-                detectedEdges,
-                kernelSettings[0], kernelSettings[1], kernelSettings[2],
-                false);
-
-        Mat hierarchy = new Mat();
-
-        List<MatOfPoint> contours = new ArrayList<>();
-        Imgproc.findContours(detectedEdges,
-                contours,
-                hierarchy,
-                Imgproc.RETR_TREE,
-                Imgproc.CHAIN_APPROX_NONE);
-
-        DetectorService.fillNestedContour(preparingImage, contours, hierarchy);
-
-        DetectorService.setBlackBackground(image, preparingImage);
-        Imgcodecs.imwrite(pathWrite, image);
-
+        switch (mode) {
+            case Cutting -> {
+                Mat face = faceDetectAndCut(image);
+                Imgcodecs.imwrite(pathWrite, face);
+            }
+            case Blurring -> {
+                Mat blurImage = getBlurBackground(image);
+                Imgcodecs.imwrite(pathWrite, blurImage);
+            }
+            default -> throw new DetectException("Unknown work mode");
+        }
         image.release();
-        greySrc.release();
-        detectedEdges.release();
-        hierarchy.release();
-        preparingImage.release();
+    }
+
+    @Override
+    public byte[] detect(String pathRead, Modes mode) throws DetectException {
+        if (!(new File(pathRead).exists())) {
+            throw new DetectException("File (" + pathRead + ") not found");
+        }
+        Mat image = Imgcodecs.imread(pathRead);
+        return detect(image, mode);
+    }
+
+    @Override
+    public byte[] detect(byte[] imageBytes, Modes mode) throws DetectException {
+        Mat image = Converter.loadMatBinary(imageBytes);
+        return detect(image, mode);
+    }
+
+    private byte[] detect(Mat image, Modes mode) throws DetectException {
+        switch (mode) {
+            case Cutting -> {
+                Mat face = faceDetectAndCut(image);
+                return Converter.saveImageBinary(face);
+            }
+            case Blurring -> {
+                Mat blurImage = getBlurBackground(image);
+                return Converter.saveImageBinary(blurImage);
+            }
+            default -> throw new DetectException("Unknown work mode");
+        }
     }
 
     private Rect faceDetect(Mat imageRead) throws DetectException {
@@ -103,19 +87,8 @@ public final class Detector implements IDetectable {
 
         MatOfRect faceDetections = new MatOfRect();
         classifier.detectMultiScale(imageRead, faceDetections);
-        Rect result = Arrays.stream(
-                        faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width))
-                .orElseThrow(() -> new DetectException("Not detected"));
-
-        imageRead.release();
-        return result;
-    }
-
-    private Mat getBlurBackground(String pathRead) throws DetectException {
-        DetectorService.checkValidity(pathRead, null, false);
-        Mat image = Imgcodecs.imread(pathRead);
-
-        return getBlurBackground(image);
+        return Arrays.stream(faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width))
+                .orElseThrow(() -> new DetectException("faceDetect: not detected"));
     }
 
     private Mat getBlurBackground(Mat image) throws DetectException {
@@ -126,14 +99,18 @@ public final class Detector implements IDetectable {
         Mat imageCopy = image.clone();
 
         Rect faceRect = faceDetect(imageCopy);
-        DetectorService.scaleRect(faceRect, 2.5, 3);
+        DetectorService.scaleRect(
+                faceRect,
+                JackalTypes.X_SCALE_COEFFICIENT,
+                JackalTypes.Y_SCALE_COEFFICIENT
+        );
         DetectorService.correctFaceRect(faceRect, image);
 
         Mat blurImage = image.clone();
         Mat face = new Mat(image, faceRect);
         Mat roi = blurImage.submat(new Rect(faceRect.x, faceRect.y, faceRect.width, faceRect.height));
 
-        Imgproc.GaussianBlur(image, blurImage, new Size(41, 41), 140);
+        Imgproc.GaussianBlur(image, blurImage, JackalTypes.BLUR_SQUARE, JackalTypes.BLUR_SIGMA);
         face.copyTo(roi);
 
         return blurImage;
