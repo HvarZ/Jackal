@@ -2,8 +2,16 @@ package eleron.jackal;
 
 import org.opencv.core.*;
 
-
+/*
+    Класс, содержащий полезные статические функции для детекции, выравнивания
+ */
 final class DetectorService {
+    /*
+        Метод, реализующий увеличение размера прямоугольника на соответствующие коэффициенты:
+            1.  По оси Х - xCoefficient (не может быть меньше или равен 0)
+            2.  По оси Y - yCoefficient (не может быть меньше или равен 0)
+        Rect не может иметь нулевую площадь
+     */
     public static void scaleRect(Rect rect, double xCoefficient, double yCoefficient) throws DetectException {
         if (xCoefficient <= 0) {
             throw new DetectException("scaleRect: invalid argument (xCoefficient must be > 0)");
@@ -27,6 +35,9 @@ final class DetectorService {
         });
     }
 
+    /*
+        Метод, корректирующий координаты прямоугольника при выходе за границы фотографии
+     */
     public static void correctFaceRect(Rect rect, Mat image) {
         if (rect.x < 0) {
             rect.x = 0;
@@ -41,6 +52,10 @@ final class DetectorService {
         }
     }
 
+
+    /*
+        Метод поиска центра прямоугольника
+     */
     public static Point getCentre(Rect rect) throws DetectException {
         if (rect.empty()) {
             throw new DetectException("getCentre: rect is empty");

@@ -2,9 +2,10 @@ package eleron.jackal;
 
 import org.opencv.core.Size;
 
+/*
+    Класс, полезных для разработки констант
+ */
 public final class JackalTypes {
-    public final static byte INT_IMP_BYTES = 2;
-
     public final static double X_SCALE_COEFFICIENT = 1.5;
     public final static double Y_SCALE_COEFFICIENT = 2.25;
 
