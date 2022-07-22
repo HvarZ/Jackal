@@ -1,9 +1,11 @@
 package eleron.jackal;
 
-public interface IDetectable {
-    void detect(String pathRead, String pathWrite, Modes mode) throws DetectException;
+import java.io.File;
 
-    byte[] detect(String pathRead, Modes mode) throws DetectException;
+public interface IDetectable {
+    void detect(File input, File output, Modes mode) throws DetectException;
+
+    byte[] detect(File pathRead, Modes mode) throws DetectException;
 
     byte[] detect(byte[] imageBytes, Modes mode) throws DetectException;
 }
