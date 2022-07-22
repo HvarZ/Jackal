@@ -1,17 +1,21 @@
 import eleron.jackal.DetectException;
 import eleron.jackal.Detector;
+import eleron.jackal.Modes;
 
 public class BackgroundBlurTest {
     public static void main(String[] args) {
         try {
             Detector detector = new Detector();
-            detector.backgroundBlur(
-                    "src/test/resources/main/TestFaceDetectImageOnePerson.png",
-                    "src/test/resources/backgroundBlurResults/backgroundBlurResult.png");
-
-            detector.backgroundBlur(
+            detector.detect(
                     "src/test/resources/main/TestFaceDetectImage.png",
-                    "src/test/resources/backgroundBlurResults/backgroundBlurResult2.png"
+                    "src/test/resources/backgroundBlurResults/backgroundBlurResult.png",
+                    Modes.Blurring
+            );
+
+           detector.detect(
+                   "src/test/resources/main/TestFaceDetectImageOnePerson.png",
+                   "src/test/resources/backgroundBlurResults/backgroundBlurResult2.png",
+                   Modes.Cutting
             );
         } catch (DetectException e) {
             e.printStackTrace();
