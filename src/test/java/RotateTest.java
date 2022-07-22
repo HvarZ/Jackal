@@ -6,6 +6,8 @@ import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.File;
+
 
 public class RotateTest {
     public static void rotate(Mat img, double angle) {
@@ -37,7 +39,7 @@ public class RotateTest {
                 rotate(image, angle);
                 Imgcodecs.imwrite("src/test/resources/rotate/1_" + angle + ".jpg", image);
                 detector.detect(
-                        "src/test/resources/rotate/1_" + angle + ".jpg",
+                        new File("src/test/resources/rotate/1_" + angle + ".jpg"),
                         Modes.Blurring);
 
                 angle--;
