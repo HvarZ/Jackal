@@ -10,4 +10,6 @@ public final class JackalTypes {
 
     public static Size BLUR_SQUARE = new Size(41, 41);
     public static int BLUR_SIGMA = 140;
+
+    public static String SAVE_TYPE = ".jpg";
 }
