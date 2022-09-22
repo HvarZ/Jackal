@@ -2,7 +2,7 @@ package eleron.jackal;
 
 import org.opencv.core.Size;
 
-/*
+/**
     Класс, полезных для разработки констант
  */
 public final class JackalTypes {

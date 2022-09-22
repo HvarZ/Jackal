@@ -9,7 +9,7 @@ public class BackgroundBlurTest {
         try {
             Detector detector = new Detector();
             detector.detect(
-                    new File("src/test/resources/main/TestFaceDetectImage.png"),
+                    new File("src/test/resources/main/TestFaceDetectImageOnePerson.png"),
                     new File("src/test/resources/backgroundBlurResults/backgroundBlurResult.png"),
                     Modes.Blurring
             );

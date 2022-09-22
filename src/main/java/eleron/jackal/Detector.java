@@ -9,7 +9,7 @@ import org.opencv.objdetect.CascadeClassifier;
 import java.io.File;
 import java.util.*;
 
-/*
+/**
     Класс реализующий работу с изображениями:
         1. Детекция лица человека
         2. Вырезка прямоугольника лица человека
@@ -22,6 +22,7 @@ public final class Detector implements IDetectable {
      */
     static {
         OpenCV.loadLocally();
+        double i = Math.cos(10);
     }
 
     /*
@@ -39,7 +40,7 @@ public final class Detector implements IDetectable {
         isLoaded = false;
     }
 
-    /*
+    /**
         Метод, реализующий поиск лиц/лица на фотографии в зависимости от режима работы делает следующий функционал:
             1. Modes.Blurring - блюр фона за прямоугольника лица
             2. Modes.Cutting - вырезка прямоугольника лица
@@ -67,7 +68,7 @@ public final class Detector implements IDetectable {
         image.release();
     }
 
-    /*
+    /**
         Метод, реализующий поиск лиц/лица на фотографии в зависимости от режима работы делает следующий функционал:
             1. Modes.Blurring - блюр фона за прямоугольника лица
             2. Modes.Cutting - вырезка прямоугольника лица
@@ -85,7 +86,7 @@ public final class Detector implements IDetectable {
     }
 
 
-    /*
+    /**
         Метод, реализующий поиск лиц/лица на фотографии в зависимости от режима работы делает следующий функционал:
             1. Modes.Blurring - блюр фона за прямоугольника лица
             2. Modes.Cutting - вырезка прямоугольника лица
@@ -100,7 +101,7 @@ public final class Detector implements IDetectable {
     }
 
 
-    /*
+    /**
         Private (вспомогательный) метод, реализующий поиск лиц/лица на фотографии в зависимости от режима работы делает следующий функционал:
             1. Modes.Blurring - блюр фона за прямоугольника лица
             2. Modes.Cutting - вырезка прямоугольника лица
@@ -122,7 +123,7 @@ public final class Detector implements IDetectable {
         }
     }
 
-    /*
+    /**
         Private (вспомогательный, вызывается при любом режиме работы) метод, реализующий поиск лица
      */
     private Rect faceDetect(Mat imageRead) throws DetectException {
@@ -137,7 +138,7 @@ public final class Detector implements IDetectable {
                 .orElseThrow(() -> new DetectException("faceDetect: not detected"));
     }
 
-    /*
+    /**
         Private (вспомогательный, вызывается при определенном режиме работы(Modes)) метод, реализующий поиск лица
         и вырезку его с сохранением только прямоугольника лица
      */
@@ -151,7 +152,7 @@ public final class Detector implements IDetectable {
         return new Mat(image, faceRect);
     }
 
-    /*
+    /**
         Private (вспомогательный, вызывается при определенном режиме работы(Modes)) метод, реализующий поиск лица
         и блюр заднего фона за прямоугольником лица
      */

@@ -2,11 +2,11 @@ package eleron.jackal;
 
 import org.opencv.core.*;
 
-/*
+/**
     Класс, содержащий полезные статические функции для детекции, выравнивания
  */
 final class DetectorService {
-    /*
+    /**
         Метод, реализующий увеличение размера прямоугольника на соответствующие коэффициенты:
             1.  По оси Х - xCoefficient (не может быть меньше или равен 0)
             2.  По оси Y - yCoefficient (не может быть меньше или равен 0)
@@ -35,7 +35,7 @@ final class DetectorService {
         });
     }
 
-    /*
+    /**
         Метод, корректирующий координаты прямоугольника при выходе за границы фотографии
      */
     public static void correctFaceRect(Rect rect, Mat image) {
@@ -53,7 +53,7 @@ final class DetectorService {
     }
 
 
-    /*
+    /**
         Метод поиска центра прямоугольника
      */
     public static Point getCentre(Rect rect) throws DetectException {

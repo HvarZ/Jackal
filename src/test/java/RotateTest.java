@@ -35,11 +35,11 @@ public class RotateTest {
 
         while (true) {
             try {
-                Mat image = Imgcodecs.imread("src/test/resources/main/1.jpg");
+                Mat image = Imgcodecs.imread("src/test/resources/main/img.png");
                 rotate(image, angle);
-                Imgcodecs.imwrite("src/test/resources/rotate/1_" + angle + ".jpg", image);
+                Imgcodecs.imwrite("src/test/resources/rotate/1_" + angle + ".png", image);
                 detector.detect(
-                        new File("src/test/resources/rotate/1_" + angle + ".jpg"),
+                        new File("src/test/resources/rotate/1_" + angle + ".png"),
                         Modes.Blurring);
 
                 angle--;
