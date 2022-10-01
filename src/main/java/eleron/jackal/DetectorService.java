@@ -8,9 +8,9 @@ import org.opencv.core.*;
 final class DetectorService {
     /**
         Метод, реализующий увеличение размера прямоугольника на соответствующие коэффициенты:
-            1.  По оси Х - xCoefficient (не может быть меньше или равен 0)
-            2.  По оси Y - yCoefficient (не может быть меньше или равен 0)
-        Rect не может иметь нулевую площадь
+        @throws DetectException По оси Х - xCoefficient (не может быть меньше или равен 0)
+        @throws DetectException По оси Y - yCoefficient (не может быть меньше или равен 0)
+        @throws DetectException Rect не может иметь нулевую площадь
      */
     public static void scaleRect(Rect rect, double xCoefficient, double yCoefficient) throws DetectException {
         if (xCoefficient <= 0) {
