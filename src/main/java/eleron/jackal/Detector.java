@@ -9,6 +9,9 @@ import org.opencv.objdetect.CascadeClassifier;
 import java.io.File;
 import java.util.*;
 
+import static eleron.jackal.DetectorService.scaleRect;
+import static eleron.jackal.DetectorService.correctFaceRect;
+
 /**
     Класс реализующий работу с изображениями:
         1. Детекция лица человека
@@ -22,7 +25,6 @@ public final class Detector implements IDetectable {
      */
     static {
         OpenCV.loadLocally();
-        double i = Math.cos(10);
     }
 
     /*
@@ -44,9 +46,9 @@ public final class Detector implements IDetectable {
         Метод, реализующий поиск лиц/лица на фотографии в зависимости от режима работы делает следующий функционал:
             1. Modes.Blurring - блюр фона за прямоугольника лица
             2. Modes.Cutting - вырезка прямоугольника лица
-        input - File объект, искомое изображение
-        output - File объект, результирующее изображение
-        Исключение выбрасывается при отсутсвии input-файла
+        @param input - File объект, искомое изображение
+        @param output - File объект, результирующее изображение
+        @throws DetectException Исключение выбрасывается при отсутсвии input-файла
      */
     @Override
     public void detect(File input, File output, Modes mode) throws DetectException {
@@ -54,7 +56,7 @@ public final class Detector implements IDetectable {
             throw new DetectException("File (" + input.getPath() + ") not found");
         }
         Mat image = Imgcodecs.imread(input.getPath());
-        switch (mode) {
+        switch (Objects.requireNonNull(mode)) {
             case Cutting -> {
                 Mat face = faceDetectAndCut(image);
                 Imgcodecs.imwrite(output.getPath(), face);
@@ -72,9 +74,9 @@ public final class Detector implements IDetectable {
         Метод, реализующий поиск лиц/лица на фотографии в зависимости от режима работы делает следующий функционал:
             1. Modes.Blurring - блюр фона за прямоугольника лица
             2. Modes.Cutting - вырезка прямоугольника лица
-        input - File объект, искомое изображение
-        return - byte[] объект, результирующее изображение
-        Исключение выбрасывается при отсутсвии input-файла
+        @param input - File объект, искомое изображение
+        @return byte[] объект, результирующее изображение
+        @throws DetectException Исключение выбрасывается при отсутсвии input-файла
      */
     @Override
     public byte[] detect(File input, Modes mode) throws DetectException {
@@ -82,7 +84,7 @@ public final class Detector implements IDetectable {
             throw new DetectException("File (" + input.getPath() + ") not found");
         }
         Mat image = Imgcodecs.imread(input.getPath());
-        return detect(image, mode);
+        return detect(image, Objects.requireNonNull(mode));
     }
 
 
@@ -90,14 +92,14 @@ public final class Detector implements IDetectable {
         Метод, реализующий поиск лиц/лица на фотографии в зависимости от режима работы делает следующий функционал:
             1. Modes.Blurring - блюр фона за прямоугольника лица
             2. Modes.Cutting - вырезка прямоугольника лица
-        imageBytes - byte[] объект, искомое изображение
-        return - byte[] объект, результирующее изображение
-        Исключение выбрасывается при отсутсвии input-файла
+        @param imageBytes - byte[] объект, искомое изображение
+        @return byte[] объект, результирующее изображение
+        @throws DetectException Исключение выбрасывается при отсутсвии input-файла
      */
     @Override
     public byte[] detect(byte[] imageBytes, Modes mode) throws DetectException {
-        Mat image = Imgcodecs.imdecode(new MatOfByte(imageBytes), Imgcodecs.IMREAD_UNCHANGED);
-        return detect(image, mode);
+        Mat image = Imgcodecs.imdecode(new MatOfByte(Objects.requireNonNull(imageBytes)), Imgcodecs.IMREAD_UNCHANGED);
+        return detect(image, Objects.requireNonNull(mode));
     }
 
 
@@ -105,9 +107,9 @@ public final class Detector implements IDetectable {
         Private (вспомогательный) метод, реализующий поиск лиц/лица на фотографии в зависимости от режима работы делает следующий функционал:
             1. Modes.Blurring - блюр фона за прямоугольника лица
             2. Modes.Cutting - вырезка прямоугольника лица
-        image - Mat объект, искомое изображение
-        return - byte[] объект, результирующее изображение
-        Исключение выбрасывается при отсутсвии input-файла
+        @param image - Mat объект, искомое изображение
+        @return byte[] объект, результирующее изображение
+        @throws DetectException Исключение выбрасывается при отсутсвии input-файла
      */
     private byte[] detect(Mat image, Modes mode) throws DetectException {
         switch (mode) {
@@ -146,8 +148,8 @@ public final class Detector implements IDetectable {
         Mat imageCopy = image.clone();
 
         Rect faceRect = faceDetect(imageCopy);
-        DetectorService.scaleRect(faceRect, JackalTypes.X_SCALE_COEFFICIENT, JackalTypes.Y_SCALE_COEFFICIENT);
-        DetectorService.correctFaceRect(faceRect, imageCopy);
+        scaleRect(faceRect, JackalTypes.X_SCALE_COEFFICIENT, JackalTypes.Y_SCALE_COEFFICIENT);
+        correctFaceRect(faceRect, imageCopy);
 
         return new Mat(image, faceRect);
     }
@@ -164,12 +166,12 @@ public final class Detector implements IDetectable {
         Mat imageCopy = image.clone();
 
         Rect faceRect = faceDetect(imageCopy);
-        DetectorService.scaleRect(
+        scaleRect(
                 faceRect,
                 JackalTypes.X_SCALE_COEFFICIENT,
                 JackalTypes.Y_SCALE_COEFFICIENT
         );
-        DetectorService.correctFaceRect(faceRect, image);
+        correctFaceRect(faceRect, image);
 
         Mat blurImage = image.clone();
         Mat face = new Mat(image, faceRect);
