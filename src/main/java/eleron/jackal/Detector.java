@@ -19,27 +19,13 @@ import static eleron.jackal.DetectorService.correctFaceRect;
         3. Блюр фона за прямоугольником лица человека
  */
 public final class Detector implements IDetectable {
-
-    /*
-        Загрузка JNI-версии OpenCV
-     */
     static {
         OpenCV.loadLocally();
     }
+    private static final CascadeClassifier classifier = new CascadeClassifier();
 
-    /*
-        Объект реализующий поиск лиц/лица на фотографии
-     */
-    private final CascadeClassifier classifier;
-
-    /*
-        Булевый флаг проверки загрузки xml-файла для поиска лица на фотографии
-     */
-    private boolean isLoaded;
-
-    public Detector() throws DetectException {
-        classifier = new CascadeClassifier();
-        isLoaded = false;
+    static {
+        classifier.load(Objects.requireNonNull(Detector.class.getResource("/cascades/haarcascade_1.xml")).getPath());
     }
 
     /**
@@ -129,11 +115,6 @@ public final class Detector implements IDetectable {
         Private (вспомогательный, вызывается при любом режиме работы) метод, реализующий поиск лица
      */
     private Rect faceDetect(Mat imageRead) throws DetectException {
-        if (!isLoaded) {
-            classifier.load("src/main/resources/haarcascade_1.xml");
-            isLoaded = true;
-        }
-
         MatOfRect faceDetections = new MatOfRect();
         classifier.detectMultiScale(imageRead, faceDetections);
         return Arrays.stream(faceDetections.toArray()).max(Comparator.comparingInt(x -> x.height * x.width))
@@ -153,6 +134,7 @@ public final class Detector implements IDetectable {
 
         return new Mat(image, faceRect);
     }
+
 
     /**
         Private (вспомогательный, вызывается при определенном режиме работы(Modes)) метод, реализующий поиск лица
